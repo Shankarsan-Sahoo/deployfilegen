@@ -40,6 +40,7 @@ def init(
     github_only: bool = typer.Option(False, "--github-only", help="Generate only GitHub Actions"),
     backend_only: bool = typer.Option(False, "--backend-only", help="Generate only for Backend"),
     frontend_only: bool = typer.Option(False, "--frontend-only", help="Generate only for Frontend"),
+    with_db: bool = typer.Option(False, "--with-db", help="Include a Postgres database service in Docker Compose"),
 ):
     """
     Initialize deployment configuration for the current project.
@@ -82,35 +83,43 @@ def init(
         if do_docker and do_backend and backend_detected:
             typer.echo("Generating Backend Dockerfile...")
             backend_docker = generate_backend_dockerfile(mode, backend_path)
-            writer.write(backend_path / "Dockerfile", backend_docker)
+            if writer.write(backend_path / "Dockerfile", backend_docker):
+                typer.echo("Generated backend/Dockerfile")
             writer.write(backend_path / ".dockerignore", "venv/\n__pycache__/\n*.pyc\n.git/\n.env\nstatic/\ntests/\n")
-            typer.echo("Generated backend/Dockerfile")
 
         # 5. Generate Frontend Dockerfile
         if do_docker and do_frontend and frontend_detected:
             typer.echo("Generating Frontend Dockerfile...")
             frontend_docker = generate_frontend_dockerfile(mode)
-            writer.write(frontend_path / "Dockerfile", frontend_docker)
+            if writer.write(frontend_path / "Dockerfile", frontend_docker):
+                typer.echo("Generated frontend/Dockerfile")
             writer.write(frontend_path / ".dockerignore", "node_modules/\nbuild/\ncoverage/\n.git/\n.env\n")
-            typer.echo("Generated frontend/Dockerfile")
 
         # 6. Generate docker-compose.yml
         if do_compose:
             typer.echo("Generating Docker Compose...")
-            compose_content = generate_docker_compose(mode, config)
+            compose_content = generate_docker_compose(mode, config, with_db=with_db)
             compose_filename = "docker-compose.prod.yml" if mode == "prod" else "docker-compose.dev.yml"
-            writer.write(project_root / compose_filename, compose_content)
-            typer.echo(f"Generated {compose_filename}")
+            if writer.write(project_root / compose_filename, compose_content):
+                typer.echo(f"Generated {compose_filename}")
 
         # 7. Generate GitHub Actions
         if do_github:
             typer.echo("Generating GitHub Actions workflow...")
             github_workflow = generate_github_workflow(config)
             github_dir = project_root / ".github" / "workflows"
-            writer.write(github_dir / "deploy.yml", github_workflow)
-            typer.echo("Generated .github/workflows/deploy.yml")
+            if writer.write(github_dir / "deploy.yml", github_workflow):
+                typer.echo("Generated .github/workflows/deploy.yml")
 
         typer.echo("Deployment configuration generated successfully!")
+        
+        # Runtime Success Checklist
+        typer.echo("\n--- 🏁 Deployment Success Checklist ---")
+        typer.echo("1. Healthcheck: Ensure your Django app exposes a '/health' endpoint.")
+        typer.echo("2. Database: Verify DATABASE_URL is accessible from the container.")
+        typer.echo("3. Environment: Confirm your server's .env matches the generated template.")
+        typer.echo("4. Images: Ensure build images are pushed to Docker Hub before deploying.")
+        typer.echo("--------------------------------------")
 
     except EnvConfigError as e:
         typer.echo(f"Error: {e}")
