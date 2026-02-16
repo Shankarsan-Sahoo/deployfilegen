@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "deployfilegen"
+version = "0.1.12"
+description = "A production-grade CLI tool to generate deployment configuration files for Django/React projects."
+readme = "README.md"
+authors = [
+  { name = "Shankarsan Sahoo", email = "shankarsansahoo2001@gmail.com" },
+]
+license = { file = "LICENSE" }
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "typer[all]",
+    "python-dotenv",
+    "pytest",
+]
+requires-python = ">=3.9"
+
+[project.scripts]
+deployfilegen = "deployfilegen.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/Shankarsan-Sahoo/deployfilegen"
+Repository = "https://github.com/Shankarsan-Sahoo/deployfilegen.git"
+Issues = "https://github.com/Shankarsan-Sahoo/deployfilegen/issues"
