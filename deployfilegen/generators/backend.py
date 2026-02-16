@@ -83,7 +83,7 @@ EXPOSE 8000
 
 # Healthcheck
 HEALTHCHECK --interval=30s --timeout=3s --start-period=30s --retries=3 \\
-    CMD curl -f http://localhost:8000/health || exit 1
+    CMD curl --silent --output /dev/null http://localhost:8000/ || exit 1
 
 # Run gunicorn
 CMD ["gunicorn", "{project_name}.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "3"]

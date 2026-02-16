@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "deployfilegen"
-version = "0.1.16"
+version = "0.1.18"
 description = "A production-grade CLI tool to generate deployment configuration files for Django/React projects."
 readme = "README.md"
 authors = [

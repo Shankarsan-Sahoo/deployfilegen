@@ -107,26 +107,6 @@ deployfilegen init [OPTIONS]
 - A project structure with a Django-based `backend` and a React-based `frontend`.
 - A `.env` file containing: `DOCKER_USERNAME`, `BACKEND_IMAGE_NAME`, `FRONTEND_IMAGE_NAME`, `DEPLOY_HOST`, and `DEPLOY_USER`.
 
-## Common Pitfalls
-
-### 1. Django Healthcheck
-The generated `docker-compose.yml` includes a healthcheck that pings `http://localhost:8000/health`. If this endpoint is missing, your container will be marked as "unhealthy" and may restart.
-
-**Quick Fix**: Add this to your `urls.py`:
-```python
-from django.http import HttpResponse
-from django.urls import path
-
-urlpatterns = [
-    path('health', lambda r: HttpResponse("OK")),
-    # ... your other paths
-]
-```
-
-### 2. Database Connection
-Ensure your `DATABASE_URL` in `.env` uses the service name if you are using the `--with-db` flag:
-`DATABASE_URL=postgres://appuser:password@db:5432/appdb`
-
 ## License
 
 MIT

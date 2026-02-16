@@ -115,7 +115,7 @@ def init(
         
         # Runtime Success Checklist
         typer.echo("\n--- 🏁 Deployment Success Checklist ---")
-        typer.echo("1. Healthcheck: Ensure your Django app exposes a '/health' endpoint.")
+        typer.echo("1. Connection: Ensure your server can reach the internet and Docker Hub.")
         typer.echo("2. Database: Verify DATABASE_URL is accessible from the container.")
         typer.echo("3. Environment: Confirm your server's .env matches the generated template.")
         typer.echo("4. Images: Ensure build images are pushed to Docker Hub before deploying.")
