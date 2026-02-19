@@ -20,14 +20,14 @@ def get_django_project_name(manage_py_path: Path) -> str:
     logger.warning("Could not detect Django project name. Defaulting to 'config'.")
     return "config"
 
-def generate_backend_dockerfile(mode: str, backend_path: Path) -> str:
+def generate_backend_dockerfile(mode: str, backend_path: Path, override_project_name: str = None) -> str:
     """
     Generates a production-ready or dev Dockerfile for Django.
     """
     if mode == "dev":
         return _generate_dev_dockerfile()
     else:
-        project_name = get_django_project_name(backend_path / "manage.py")
+        project_name = override_project_name or get_django_project_name(backend_path / "manage.py")
         return _generate_prod_dockerfile(project_name)
 
 def _generate_prod_dockerfile(project_name: str) -> str:
@@ -64,7 +64,7 @@ RUN addgroup --system appgroup && adduser --system --group appuser
 COPY --from=builder /app/wheels /wheels
 COPY --from=builder /app/requirements.txt .
 
-RUN pip install --no-cache /wheels/*
+RUN pip install --no-cache-dir /wheels/*
 
 COPY . .
 
@@ -72,7 +72,7 @@ COPY . .
 RUN chown -R appuser:appgroup /app
 
 # Ensure entrypoint is executable
-COPY --chmod=755 ./backend/entrypoint.sh /entrypoint.sh
+COPY --chmod=755 ./entrypoint.sh /entrypoint.sh
 
 # Switch to non-root user
 USER appuser
@@ -85,9 +85,11 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=30s --retries=3 \\
     CMD curl --silent --output /dev/null http://localhost:8000/ || exit 1
 
 # Runtime Entrypoint (Handles migrations/static)
+# Ensure your Django settings define STATIC_ROOT = /app/static
 ENTRYPOINT ["/entrypoint.sh"]
 
 # Run gunicorn
+# Uses the dynamically detected project name from manage.py
 CMD ["gunicorn", "{project_name}.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "3"]
 """
 
@@ -125,7 +127,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends gcc libpq-dev \
     && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .
-RUN pip install -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
