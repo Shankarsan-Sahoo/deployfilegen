@@ -11,7 +11,7 @@ It automates the creation of **Dockerfiles**, **docker-compose.yml**, and **GitH
 - **Flexible Deployment**: Choose between **SSH Build** (default) or **Registry Push** strategies.
 - **Production-Grade Defaults**:
     - **Security**: Non-root users, unprivileged Nginx.
-    - **Reliability**: Healthchecks, `depends_on`, and race-condition prevention.
+    - **Reliability**: Healthchecks, restart policies, race-condition prevention.
     - **Optimization**: Multi-stage builds, `.dockerignore` generation, layer caching.
 
 ---
@@ -25,28 +25,41 @@ pip install deployfilegen
 
 ### 2. Local Development (Zero Config)
 ```bash
+# Generate dev config (auto-detects your stack)
 deployfilegen init --mode dev
+
+# Start your app
+docker compose -f docker-compose.dev.yml up --build
+
+# With a Postgres database
+deployfilegen init --mode dev --with-db --force
 docker compose -f docker-compose.dev.yml up --build
 ```
 
-### 3. Production — SSH Build (Default)
-Build images directly on your server. No container registry needed.
+### 3. Production — SSH Build (Default, Recommended)
+Build images directly on your server. **No container registry needed.**
 
 ```bash
+# Generate production config
 deployfilegen init --mode prod --deploy ssh
+
+# Or just (ssh is the default):
+deployfilegen init --mode prod
 ```
 
-**Required `.env` variables:**
+**Required `.env` variables (only 2!):**
 ```ini
 DEPLOY_HOST=your_server_ip
 DEPLOY_USER=ubuntu
 ```
 
-**GitHub Actions workflow will:**
-`SSH → git pull → docker compose build → docker compose up -d`
+**Generated GitHub Actions workflow will:**
+```
+SSH into server → git pull → docker compose build → docker compose up -d
+```
 
-### 4. Production — Registry Push
-Push images to Docker Hub/GHCR, then pull on server.
+### 4. Production — Registry Push (Advanced)
+Push images to Docker Hub/GHCR, then pull on server. Use this for immutable deployments.
 
 ```bash
 deployfilegen init --mode prod --deploy registry
@@ -54,37 +67,43 @@ deployfilegen init --mode prod --deploy registry
 
 **Required `.env` variables:**
 ```ini
+# Server (always required)
 DEPLOY_HOST=your_server_ip
 DEPLOY_USER=ubuntu
+
+# Registry (only required for --deploy registry)
 DOCKER_USERNAME=your_username
 BACKEND_IMAGE_NAME=user/backend
 FRONTEND_IMAGE_NAME=user/frontend
 ```
 
-**GitHub Actions workflow will:**
-`Build → Push to Registry → SSH → docker compose pull → up -d`
+**Generated GitHub Actions workflow will:**
+```
+Build images → Push to Registry → SSH into server → docker compose pull → up -d
+```
 
 ---
 
 ## 🛠 Supported Stacks
 
-**Backend:**
-- **Django**: Auto-detects project name from `manage.py`.
-- **Python**: Uses `3.11-slim` by default.
-
-**Frontend:**
-- **Vite**: Auto-configures port `5173` and host binding.
-- **Next.js**: Auto-configures port `3000` and standalone build.
-- **Create React App**: Auto-configures port `3000`.
+| Component | Framework | Auto-Detected |
+|:---|:---|:---|
+| **Backend** | Django | Project name from `manage.py` |
+| **Frontend** | Vite | Port `5173`, `--host` binding |
+| **Frontend** | Next.js | Port `3000`, `-H` binding |
+| **Frontend** | CRA | Port `3000`, `HOST` env |
 
 ---
 
 ## ⚙️ Configuration
 
-Generate a boilerplate `.env`:
+Generate a boilerplate `.env` with the right variables for your strategy:
 ```bash
-deployfilegen template                  # SSH mode (minimal)
-deployfilegen template --deploy registry  # Registry mode (full)
+# SSH mode (minimal — just 2 vars)
+deployfilegen template
+
+# Registry mode (includes image names)
+deployfilegen template --deploy registry
 ```
 
 ---
@@ -95,21 +114,54 @@ deployfilegen template --deploy registry  # Registry mode (full)
 Usage: deployfilegen init [OPTIONS]
 
 Options:
-  --mode [dev|prod]      Generation mode (Default: prod)
+  --mode [dev|prod]       Generation mode (Default: prod)
   --deploy [ssh|registry] Deployment strategy (Default: ssh)
-  --force, -f            Overwrite existing files
-  --with-db              Include a Postgres service in docker-compose
-  --docker-only          Generate only Dockerfiles
-  --compose-only         Generate only docker-compose.yml
-  --github-only          Generate only GitHub Actions (Prod only)
-  --backend-only         Only generate backend assets
-  --frontend-only        Only generate frontend assets
-  # Stability Overrides
-  --frontend-port        Override detected frontend dev port
-  --start-command        Override detected frontend start command
-  --project-name         Override detected Django project name
-  --help                 Show this message
+  --force, -f             Overwrite existing files
+  --with-db               Include a Postgres service in docker-compose
+
+  # Scope Control
+  --docker-only           Generate only Dockerfiles
+  --compose-only          Generate only docker-compose.yml
+  --github-only           Generate only GitHub Actions (Prod only)
+  --backend-only          Only generate backend assets
+  --frontend-only         Only generate frontend assets
+
+  # Override Detection
+  --frontend-port INT     Override detected frontend dev port
+  --start-command TEXT    Override detected frontend start command
+  --project-name TEXT     Override detected Django project name
+
+  --help                  Show this message
 ```
+
+---
+
+## 🔧 Troubleshooting
+
+**"Missing required variables" error in prod mode?**
+```bash
+# Check which variables you need:
+deployfilegen template              # SSH: just DEPLOY_HOST + DEPLOY_USER
+deployfilegen template --deploy registry  # Registry: adds DOCKER_USERNAME + IMAGE_NAMEs
+```
+
+**Frontend container exits immediately?**
+Your dev server might not be binding to `0.0.0.0`. Override the start command:
+```bash
+deployfilegen init --mode dev --start-command "serve" --force
+```
+
+**Wrong port detected?**
+```bash
+deployfilegen init --mode dev --frontend-port 8080 --force
+```
+
+**Django project name wrong?**
+```bash
+deployfilegen init --mode prod --project-name my_project --force
+```
+
+---
 
 ## 📄 License
 MIT
