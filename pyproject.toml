@@ -4,17 +4,36 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "deployfilegen"
-version = "0.1.33"
-description = "A production-grade CLI tool to generate deployment configuration files for Django/React projects."
+version = "0.1.34"
+description = "Auto-generate Dockerfiles, docker-compose, and GitHub Actions for Django + React/Vite/Next.js projects. Zero config. Production-ready."
 readme = "README.md"
 authors = [
   { name = "Shankarsan Sahoo", email = "shankarsansahoo2001@gmail.com" },
 ]
 license = { file = "LICENSE" }
+keywords = [
+    "docker", "dockerfile", "docker-compose", "deployment",
+    "django", "react", "vite", "nextjs", "devops",
+    "github-actions", "ci-cd", "infrastructure",
+    "code-generator", "production", "nginx", "gunicorn",
+]
 classifiers = [
     "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: System Administrators",
+    "Topic :: Software Development :: Build Tools",
+    "Topic :: Software Development :: Code Generators",
+    "Topic :: System :: Systems Administration",
+    "Framework :: Django",
+    "Environment :: Console",
 ]
 dependencies = [
     "typer[all]",
