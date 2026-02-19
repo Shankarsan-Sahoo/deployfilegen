@@ -39,7 +39,7 @@ def _generate_prod_compose(backend_image: str, frontend_image: str, with_db: boo
 
 services:
   backend:
-    image: {backend_image}:${{IMAGE_TAG:-latest}}
+    image: ${BACKEND_IMAGE_NAME}:${IMAGE_TAG:-latest}
     
     restart: always{db_depends}
     environment:
@@ -64,11 +64,11 @@ services:
     #       memory: 256M
 {db_service}
   frontend:
-    image: {frontend_image}:${{IMAGE_TAG:-latest}}
+    image: ${FRONTEND_IMAGE_NAME}:${IMAGE_TAG:-latest}
     
     restart: always
     ports:
-      - "80:80"
+      - "80:8080"
     depends_on:
       backend:
         condition: service_healthy

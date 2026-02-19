@@ -71,9 +71,8 @@ COPY . .
 # Change ownership to non-root user
 RUN chown -R appuser:appgroup /app
 
-# Collect static files (ensure this is safe to run without DB connection if needed)
-# Or handle this in entrypoint on deployment.
-RUN DJANGO_SECRET_KEY=build-time-dummy DATABASE_URL=sqlite:///db.sqlite3 python manage.py collectstatic --noinput
+# Ensure entrypoint is executable
+COPY --chmod=755 ./backend/entrypoint.sh /entrypoint.sh
 
 # Switch to non-root user
 USER appuser
@@ -85,8 +84,32 @@ EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=3s --start-period=30s --retries=3 \\
     CMD curl --silent --output /dev/null http://localhost:8000/ || exit 1
 
+# Runtime Entrypoint (Handles migrations/static)
+ENTRYPOINT ["/entrypoint.sh"]
+
 # Run gunicorn
 CMD ["gunicorn", "{project_name}.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "3"]
+"""
+
+def generate_entrypoint_script() -> str:
+    """
+    Generates a production entrypoint script for Django.
+    """
+    return """#!/bin/sh
+
+# Exit immediately if a command exits with a non-zero status
+set -e
+
+# Collect static files
+echo "Collecting static files..."
+python manage.py collectstatic --noinput
+
+# Run migrations (Optional - caution in clustered envs)
+# echo "Running migrations..."
+# python manage.py migrate --noinput
+
+# Execute the main container command
+exec "$@"
 """
 
 def _generate_dev_dockerfile() -> str:

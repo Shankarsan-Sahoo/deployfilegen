@@ -6,7 +6,7 @@ from deployfilegen.utils.logger import logger
 from deployfilegen.utils.writer import FileWriter
 from deployfilegen.config.env_loader import load_environment, validate_environment
 from deployfilegen.analyzer.detector import detect_django_backend, detect_react_frontend
-from deployfilegen.generators.backend import generate_backend_dockerfile
+from deployfilegen.generators.backend import generate_backend_dockerfile, generate_entrypoint_script
 from deployfilegen.generators.frontend import generate_frontend_dockerfile
 from deployfilegen.generators.compose import generate_docker_compose
 from deployfilegen.generators.github import generate_github_workflow
@@ -87,6 +87,12 @@ def init(
                 typer.echo("Generated backend/Dockerfile")
             writer.write(backend_path / ".dockerignore", "venv/\n__pycache__/\n*.pyc\n.git/\n.env\nstatic/\ntests/\n")
 
+            # Generate entrypoint.sh for production
+            if mode == "prod":
+                entrypoint_content = generate_entrypoint_script()
+                if writer.write(backend_path / "entrypoint.sh", entrypoint_content):
+                    typer.echo("Generated backend/entrypoint.sh")
+
         # 5. Generate Frontend Dockerfile
         if do_docker and do_frontend and frontend_detected:
             typer.echo("Generating Frontend Dockerfile...")
@@ -116,8 +122,12 @@ def init(
         # Runtime Success Checklist
         typer.echo("\n--- 🏁 Deployment Success Checklist ---")
         typer.echo("1. Connection: Ensure your server can reach the internet and your Container Registry.")
-        typer.echo("2. Database: Verify DATABASE_URL is accessible from the container.")
-        typer.echo("3. Environment: Confirm your server's .env matches the generated template.")
+        if with_db:
+             typer.echo("2. Database: Configured for INTERNAL Postgres service.")
+        else:
+             typer.echo("2. Database: Configured for EXTERNAL database. Ensure DATABASE_URL is set.")
+
+        typer.echo(f"3. Environment: Confirm your server's .env matches the generated template.")
         typer.echo("4. Images: Ensure build images are pushed to your Registry before deploying.")
         typer.echo("--------------------------------------")
 
